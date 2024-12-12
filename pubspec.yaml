@@ -68,6 +68,7 @@ flutter:
    - assets/images/EmptyKeranjangPage.svg
    - assets/images/EmptyPesananPage.svg
    - assets/images/notFound.png 
+   - assets/images/orderNoData.svg
 
    - assets/baju.jpg
    - assets/images/ProdukBaju1.jpeg

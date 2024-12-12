@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'main.dart';
+import 'pesanan.dart';
 
 class BuatPesananPage extends StatefulWidget {
   final Product product;
@@ -14,10 +15,11 @@ class BuatPesananPage extends StatefulWidget {
 class _BuatPesananPageState extends State<BuatPesananPage> {
   late String selectedSize;
 
-   @override
+  @override
   void initState() {
     super.initState();
-    selectedSize = widget.product.sizes.first; // Default ukuran pertama
+    selectedSize = widget.product.sizes.first; // Ukuran default
+    widget.product.sizeQuantities[selectedSize] = widget.product.quantity;
   }
 
   void _updateSizeQuantities(String size) {
@@ -31,7 +33,7 @@ class _BuatPesananPageState extends State<BuatPesananPage> {
     });
   }
 
-   String _getSizeDetails() {
+  String _getSizeDetails() {
     return widget.product.sizeQuantities.entries
         .map((entry) => "${entry.key}(${entry.value})")
         .join(", ");
@@ -67,31 +69,24 @@ class _BuatPesananPageState extends State<BuatPesananPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Bagian atas: Gambar dan informasi produk
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Row untuk Gambar Produk, Nama, dan Harga
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Gambar Produk
                     Image.asset(
                       widget.product.imageUrl,
                       width: 100,
                       height: 125,
                       fit: BoxFit.cover,
                     ),
-                    const SizedBox(width: 16.0), // Jarak antar gambar dan teks
-
-                    // Nama Produk dan Harga di dalam Kolom
+                    const SizedBox(width: 16.0),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        // Nama Produk
                         Text(
                           widget.product.name,
                           style: const TextStyle(
@@ -99,9 +94,7 @@ class _BuatPesananPageState extends State<BuatPesananPage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 76.0), // Jarak antar teks
-
-                        // Harga Produk
+                        const SizedBox(height: 76.0),
                         Text(
                           'Rp $formattedPrice',
                           style: const TextStyle(
@@ -112,11 +105,8 @@ class _BuatPesananPageState extends State<BuatPesananPage> {
                         ),
                       ],
                     ),
-                    const Spacer(), // Memisahkan tombol di sebelah kanan
-
-                    // Tombol Tambah & Kurang
+                    const Spacer(),
                     Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Row(
                           children: [
@@ -128,9 +118,10 @@ class _BuatPesananPageState extends State<BuatPesananPage> {
                                         widget.product.totalPrice =
                                             widget.product.quantity *
                                                 widget.product.price;
-                                        widget.product.sizeQuantities.clear();
-                                        widget.product.sizeQuantities[selectedSize] =
-                                            widget.product.quantity;
+                                        widget.product.sizeQuantities
+                                            .update(selectedSize,
+                                                (value) => widget
+                                                    .product.quantity);
                                       });
                                     }
                                   : null,
@@ -152,9 +143,7 @@ class _BuatPesananPageState extends State<BuatPesananPage> {
                                   _updateSizeQuantities(selectedSize);
                                 });
                               },
-                              icon: const Icon(
-                                Icons.add_circle_outline,
-                              ),
+                              icon: const Icon(Icons.add_circle_outline),
                             ),
                           ],
                         ),
@@ -162,20 +151,14 @@ class _BuatPesananPageState extends State<BuatPesananPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10.0), // Jarak antara gambar dan teks ukuran
-
-                // Teks 'Ukuran:' di bawah gambar
+                const SizedBox(height: 10.0),
                 const Text(
                   'Ukuran :',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
                   ),
                 ),
-                const SizedBox(height: 8.0),
-
-                // Tombol Ukuran
                 const SizedBox(height: 8.0),
                 Row(
                   children: widget.product.sizes.map((size) {
@@ -208,52 +191,28 @@ class _BuatPesananPageState extends State<BuatPesananPage> {
             ),
           ),
           const Divider(thickness: 1.0),
-
-          // Bagian tengah: Rincian pembayaran
           Container(
             padding: const EdgeInsets.all(16.0),
             color: Colors.orange[100],
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
-                  children: [
-                    Icon(Icons.receipt_long, color: Colors.orange, size: 24),
-                    SizedBox(width: 8),
-                    Text(
-                      'Rincian Pembayaran',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16.0),
                 Text(
                   'Nama Produk: ${widget.product.name} (${_getSizeDetails()})',
                 ),
-                const SizedBox(height: 4.0),
-                Text('Total Harga Produk : $formattedPrice'),
-                const SizedBox(height: 4.0),
+                Text('Total Harga Produk : Rp $formattedPrice'),
                 Text('Ongkos kirim : $formattedOngkosKirim'),
-                const SizedBox(height: 4.0),
                 Text('Biaya Admin : $formattedBiayaAdmin'),
-                const SizedBox(height: 4.0),
                 const Text(
                   'Alamat Pengiriman : ',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 4.0),
                 const Text(
-                  '3MR6+CQP, Jl. Urip Sumoharjo, Pringlangu,\nKec. Pekalongan Bar., Kota Pekalongan, Jawa Tengah 51117',
+                  '3MR6+CQP, Jl. Urip Sumoharjo, Pringlangu, Kec. Pekalongan Bar., Kota Pekalongan, Jawa Tengah 51117',
                 ),
               ],
             ),
           ),
-
-          // Bagian bawah: Total pembayaran dan tombol
           Expanded(
             child: Container(
               alignment: Alignment.bottomCenter,
@@ -270,9 +229,41 @@ class _BuatPesananPageState extends State<BuatPesananPage> {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Pesanan berhasil dibuat!'),
+                      DateTime now = DateTime.now();
+                      DateTime shippingDate = now.add(const Duration(days: 3));
+                      String shippingDateText =
+                          DateFormat('EEEE, d MMMM', 'id').format(shippingDate);
+
+                      final paymentDetails = {
+                        'productNames': widget.product.name,
+                        'totalItems': widget.product.quantity,
+                        'totalPriceProductAll': totalPembayaran,
+                        'shippingAddress':
+                            '3MR6+CQP, Jl. Urip Sumoharjo, Pringlangu, Kec. Pekalongan Bar., Kota Pekalongan, Jawa Tengah 51117',
+                        'shippingDate': shippingDateText,
+                        'productDetails': widget.product.sizeQuantities.entries
+                            .map((entry) => {
+                                  'productName': widget.product.name,
+                                  'size': entry.key,
+                                  'quantity': entry.value,
+                                })
+                            .toList(),
+                      };
+
+                      Product.savedOrders.add(paymentDetails);
+
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Pesanan Berhasil'),
+                          content: const Text(
+                              'Pesanan Anda telah berhasil disimpan.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Tutup'),
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -285,10 +276,7 @@ class _BuatPesananPageState extends State<BuatPesananPage> {
                     ),
                     child: const Text(
                       'Buat Pesanan',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.white),
                     ),
                   ),
                 ],

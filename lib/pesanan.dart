@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/main.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_svg/svg.dart';
 import 'pageLogin.dart';
 import 'keranjang.dart';
 import 'favorite.dart';
+import 'BuatPesanan.dart';
+
 // import 'checkout.dart';
 
 class MyApp extends StatelessWidget {
@@ -37,7 +41,20 @@ class _PesananPageState extends State<PesananPage> {
   String selectedRoute = '/pesanan';
 
   @override
+  void initState() {
+    super.initState();
+    // Hapus pesanan kadaluarsa saat halaman dibuka
+    // Product.removeExpiredOrders();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Ambil data dari arguments
+    // final paymentDetails =
+    //     ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+    // final productDetails = paymentDetails?['productDetails'] as List<dynamic>?;
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -155,12 +172,68 @@ class _PesananPageState extends State<PesananPage> {
           ],
         ),
       ),
-      body: const Center(
-        child: Text(
-          'Ini adalah halaman Pesanan.',
-          style: TextStyle(fontSize: 18, color: Colors.black54),
-        ),
-      ),
+      body: Product.savedOrders.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SvgPicture.asset(
+                    'assets/images/orderNoData.svg',
+                    width: 200,
+                    height: 200,
+                  ),
+                  const SizedBox(height: 16.0),
+                  const Text(
+                    'belum ada pesanan yg ditambahkan',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              itemCount: Product.savedOrders.length,
+              itemBuilder: (context, index) {
+                final order = Product.savedOrders[index];
+                return Card(
+                  margin: const EdgeInsets.all(8.0),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pesanan ${index + 1}',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const Divider(),
+                        Text('Nama Produk: ${order['productNames']}'),
+                        Text('Jumlah Produk: ${order['totalItems']}'),
+                        Text(
+                          'Total Harga Produk: Rp${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(order['totalPriceProductAll'])}',
+                        ),
+                        const Text('Ongkos Kirim: Rp4.000'),
+                        const Text('Biaya Admin: Rp3.000'),
+                        Text('Alamat: ${order['shippingAddress']}'),
+                        Text('Tanggal Pengiriman: ${order['shippingDate']}'),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Detail Produk:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        ...order['productDetails'].map<Widget>((detail) {
+                          return Text(
+                              '- ${detail['productName']} (${detail['size']}) x${detail['quantity']}');
+                        }).toList(),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 
@@ -172,11 +245,11 @@ class _PesananPageState extends State<PesananPage> {
     return ListTile(
       selected: selectedRoute == route,
       selectedTileColor: Colors.blue.withOpacity(0.2),
-      leading: Icon(icon, color: selectedRoute == route ? Colors.yellow : null),
+      leading: Icon(icon, color: selectedRoute == route ? const Color.fromARGB(255, 40, 98, 206): null),
       title: Text(
         title,
         style: TextStyle(
-          color: selectedRoute == route ? Colors.yellow : null,
+          color: selectedRoute == route ? const Color.fromARGB(255, 40, 98, 206): null,
           fontWeight:
               selectedRoute == route ? FontWeight.bold : FontWeight.normal,
         ),

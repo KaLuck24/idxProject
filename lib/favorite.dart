@@ -328,11 +328,11 @@ class _FavoritePageState extends State<FavoritePage> {
     return ListTile(
       selected: selectedRoute == route,
       selectedTileColor: Colors.blue.withOpacity(0.2),
-      leading: Icon(icon, color: selectedRoute == route ? Colors.yellow : null),
+      leading: Icon(icon, color: selectedRoute == route ? const Color.fromARGB(255, 40, 98, 206): null),
       title: Text(
         title,
         style: TextStyle(
-          color: selectedRoute == route ? Colors.yellow : null,
+          color: selectedRoute == route ? const Color.fromARGB(255, 40, 98, 206): null,
           fontWeight:
               selectedRoute == route ? FontWeight.bold : FontWeight.normal,
         ),

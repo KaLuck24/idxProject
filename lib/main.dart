@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'keranjang.dart';
 import 'checkout.dart';
 import 'pageLogin.dart';
 import 'favorite.dart';
 import 'pesanan.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('id', null); // Inisialisasi untuk locale 'id'
   runApp(const MyApp());
 }
 
@@ -193,11 +196,11 @@ class _HomeScreenState extends State<HomeScreen> {
               selectedTileColor:
                   Colors.blue.withOpacity(0.2), // Warna latar saat aktif
               leading: Icon(Icons.home,
-                  color: selectedRoute == '/home' ? Colors.yellow : null),
+                  color: selectedRoute == '/home' ? const Color.fromARGB(255, 40, 98, 206) : null),
               title: Text(
                 'Beranda',
                 style: TextStyle(
-                  color: selectedRoute == '/home' ? Colors.yellow : null,
+                  color: selectedRoute == '/home' ? const Color.fromARGB(255, 40, 98, 206): null,
                   fontWeight: selectedRoute == '/home'
                       ? FontWeight.bold
                       : FontWeight.normal,
@@ -215,11 +218,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   '/favorite', // Aktif jika di halaman 'Favorite'
               selectedTileColor: Colors.blue.withOpacity(0.2),
               leading: Icon(Icons.favorite,
-                  color: selectedRoute == '/favorite' ? Colors.yellow : null),
+                  color: selectedRoute == '/favorite' ? const Color.fromARGB(255, 40, 98, 206): null),
               title: Text(
                 'Favorite',
                 style: TextStyle(
-                  color: selectedRoute == '/favorite' ? Colors.yellow : null,
+                  color: selectedRoute == '/favorite' ? const Color.fromARGB(255, 40, 98, 206): null,
                   fontWeight: selectedRoute == '/favorite'
                       ? FontWeight.bold
                       : FontWeight.normal,
@@ -238,11 +241,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   '/keranjang', // Aktif jika di halaman 'Keranjang'
               selectedTileColor: Colors.blue.withOpacity(0.2),
               leading: Icon(Icons.shopping_cart,
-                  color: selectedRoute == '/keranjang' ? Colors.yellow : null),
+                  color: selectedRoute == '/keranjang' ? const Color.fromARGB(255, 40, 98, 206): null),
               title: Text(
                 'Keranjang',
                 style: TextStyle(
-                  color: selectedRoute == '/keranjang' ? Colors.yellow : null,
+                  color: selectedRoute == '/keranjang' ? const Color.fromARGB(255, 40, 98, 206): null,
                   fontWeight: selectedRoute == '/keranjang'
                       ? FontWeight.bold
                       : FontWeight.normal,
@@ -261,11 +264,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   '/pesanan', // Aktif jika di halaman 'Pesanan saya'
               selectedTileColor: Colors.blue.withOpacity(0.2),
               leading: Icon(Icons.list,
-                  color: selectedRoute == '/pesanan' ? Colors.yellow : null),
+                  color: selectedRoute == '/pesanan' ? const Color.fromARGB(255, 40, 98, 206): null),
               title: Text(
                 'Pesanan saya',
                 style: TextStyle(
-                  color: selectedRoute == '/pesanan' ? Colors.yellow : null,
+                  color: selectedRoute == '/pesanan' ? const Color.fromARGB(255, 40, 98, 206): null,
                   fontWeight: selectedRoute == '/pesanan'
                       ? FontWeight.bold
                       : FontWeight.normal,
@@ -538,11 +541,14 @@ class Product {
   final List<String> sizes;
   final double price;
   final double rating;
+  static List<Map<String, dynamic>> savedOrders = [];
   int quantity;
   double totalPrice;
   bool isSelected;
   bool isCheckBoxCart;
   Map<String, int> sizeQuantities;
+  Map<String, int> selectedSizes = {};
+  String? activeSize;
 
   Product({
     required this.name,
@@ -551,9 +557,10 @@ class Product {
     required this.sizes,
     required this.price,
     required this.rating,
-    this.quantity = 1,
+    this.quantity = 0,
     this.isSelected = false,
     this.isCheckBoxCart = false,
+    this.activeSize,
     Map<String, int>? sizeQuantities,
   })  : totalPrice = price * (sizeQuantities?[sizes.first] ?? 1),
         sizeQuantities = sizeQuantities ?? {sizes.first: 1};
@@ -573,6 +580,30 @@ class Product {
   void updateTotalPrice() {
     totalPrice = price * quantity; // Update total price based on quantity
   }
+
+  void addOrder(Map<String, dynamic> order) {
+    savedOrders.add(order);
+  }
+
+  static void removeExpiredOrders() {
+  Product.savedOrders.removeWhere((order) {
+    final shippingDateText = order['shippingDate'];
+    try {
+      // Parsing tanggal pengiriman
+      DateTime orderShippingDate = DateFormat('EEEE, d MMMM', 'id')
+          .parse(shippingDateText);
+
+      // Periksa apakah tanggal pengiriman telah lewat
+      final isExpired = orderShippingDate.isBefore(DateTime.now());
+      if (isExpired) {
+        print('Menghapus pesanan kadaluarsa: $order'); // Debug log
+      }
+      return isExpired;
+    } catch (e) {
+      return false; // Jika parsing gagal, jangan hapus
+    }
+  });
+}
 
   String getFormattedPrice() {
     // Format the price with currency formatting

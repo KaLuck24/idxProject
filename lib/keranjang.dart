@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:myapp/main.dart';
 import 'pageLogin.dart';
 import 'favorite.dart';
@@ -56,12 +57,25 @@ class KeranjangPage extends StatefulWidget {
 
 class _KeranjangPageState extends State<KeranjangPage> {
   String selectedRoute = '/keranjang';
+  String _generateProductDetails(Product product) {
+    // Filter ukuran yang memiliki quantity > 0
+    String sizes = product.selectedSizes.entries
+        .where((entry) => entry.value > 0) // Hanya ukuran dengan jumlah > 0
+        .map((entry) => '${entry.key}(${entry.value})')
+        .join(', ');
+
+    // Gabungkan nama produk dengan ukuran
+    return sizes.isNotEmpty ? "${product.name} ($sizes)" : product.name;
+  }
+
+  List<Product> selectedProducts = [];
 
   @override
   Widget build(BuildContext context) {
     final carts = KeranjangProducts.carts;
     List<Product> selectedProducts =
         carts.where((product) => product.isSelected).toList();
+
     int totalItems = selectedProducts.length;
 
     final totalPriceProductAll = selectedProducts.fold(0.0, (sum, product) {
@@ -72,7 +86,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
         selectedProducts.isNotEmpty ? totalPriceProductAll + 4000 + 3000 : 0.0;
 
     String productNames = selectedProducts
-        .map((product) => '${product.name} (${product.quantity})')
+        .map((product) => _generateProductDetails(product))
         .join(', ');
 
     return Scaffold(
@@ -214,208 +228,385 @@ class _KeranjangPageState extends State<KeranjangPage> {
               ),
             )
           : Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8.0),
-              itemCount: carts.length,
-              itemBuilder: (context, index) {
-                final product = carts[index];
-                final formattedTotalPrice = NumberFormat.currency(
-                  locale: 'id',
-                  symbol: '',
-                  decimalDigits: 0,
-                ).format(product.totalPrice);
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(8.0),
+                    itemCount: carts.length,
+                    itemBuilder: (context, index) {
+                      final product = carts[index];
+                      final formattedTotalPrice = NumberFormat.currency(
+                        locale: 'id',
+                        symbol: '',
+                        decimalDigits: 0,
+                      ).format(product.totalPrice);
 
-                return Card(
-                  elevation: 3,
-                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  color: product.isSelected
-                      ? Colors.yellow[100]
-                      : Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0), // Padding pada card
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Checkbox(
-                              value: product.isSelected,
-                              onChanged: (value) {
-                                setState(() {
-                                  product.isSelected = value!;
-                                });
-                              },
-                            ),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.asset(
-                                product.imageUrl,
-                                height: 100,
-                                width: 80,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
+                      return Card(
+                        elevation: 3,
+                        margin: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        color: product.isSelected
+                            ? Colors.yellow[100]
+                            : Colors.white,
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.all(8.0), // Padding pada card
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    product.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                  Checkbox(
+                                    value: product.isSelected,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        product.isSelected = value!;
+                                      });
+                                    },
+                                  ),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.asset(
+                                      product.imageUrl,
+                                      height: 100,
+                                      width: 80,
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Rp $formattedTotalPrice',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          product.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Rp $formattedTotalPrice',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                  ),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      IconButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            if (carts[index].quantity > 0) {
+                                              // Kurangi jumlah ukuran yang aktif
+                                              if (carts[index].activeSize !=
+                                                      null &&
+                                                  carts[index]
+                                                      .selectedSizes
+                                                      .containsKey(carts[index]
+                                                          .activeSize!)) {
+                                                String activeSize =
+                                                    carts[index].activeSize!;
+                                                carts[index].selectedSizes[
+                                                        activeSize] =
+                                                    carts[index].selectedSizes[
+                                                            activeSize]! -
+                                                        1;
+
+                                                // Jika jumlah ukuran tersebut mencapai 0, hapus dari daftar
+                                                if (carts[index].selectedSizes[
+                                                        activeSize]! <=
+                                                    0) {
+                                                  carts[index]
+                                                      .selectedSizes
+                                                      .remove(activeSize);
+                                                  carts[index].activeSize =
+                                                      null;
+                                                }
+                                              }
+
+                                              // Kurangi total quantity
+                                              carts[index].quantity--;
+
+                                              // Perbarui total harga
+                                              carts[index].updateTotalPrice();
+                                            }
+
+                                            // Jika quantity kurang dari 0, tampilkan pop-up konfirmasi
+                                            if (carts[index].quantity <= 0) {
+                                              carts[index].quantity =
+                                                  0; // Pastikan quantity tidak negatif
+                                              showDialog(
+                                                context: context,
+                                                builder:
+                                                    (BuildContext context) {
+                                                  return AlertDialog(
+                                                    title: const Text(
+                                                        "Hapus Produk"),
+                                                    content: const Text(
+                                                        "Apakah Anda ingin menghapus produk ini dari keranjang?"),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          // Jika pengguna memilih "Tidak", kembalikan quantity ke 0
+                                                          setState(() {
+                                                            carts[index]
+                                                                .quantity = 0;
+                                                          });
+                                                          Navigator.of(context)
+                                                              .pop();
+                                                        },
+                                                        child:
+                                                            const Text("Tidak"),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          // Jika pengguna memilih "Ya", hapus produk dari keranjang
+                                                          setState(() {
+                                                            carts.removeAt(
+                                                                index);
+                                                          });
+                                                          Navigator.of(context)
+                                                              .pop();
+                                                        },
+                                                        child: const Text("Ya"),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
+                                            }
+                                          });
+                                        },
+                                        icon: const Icon(
+                                            Icons.remove_circle_outline),
+                                      ),
+                                      Text(product.quantity.toString()),
+                                      // IconButton(
+                                      //   onPressed: () {
+                                      //     setState(() {
+                                      //       product.increaseQuantity();
+                                      //       product.totalPrice = product.price *
+                                      //           product.quantity;
+                                      //     });
+                                      //   },
+                                      //   icon: const Icon(
+                                      //       Icons.add_circle_outline),
+                                      // ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      if (product.quantity > 1) {
-                                        product.decreaseQuantity();
-                                        product.totalPrice = product.price *
-                                            product.quantity;
-                                      } else {
-                                        carts.removeAt(index);
-                                      }
-                                    });
-                                  },
-                                  icon: const Icon(Icons.remove_circle_outline),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Ukuran:',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                Text(product.quantity.toString()),
-                                IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      product.increaseQuantity();
-                                      product.totalPrice = product.price *
-                                          product.quantity;
-                                    });
-                                  },
-                                  icon: const Icon(Icons.add_circle_outline),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Ukuran:',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                              ),
+                              const SizedBox(height: 4),
+                              // Wrap untuk tombol sizes agar tetap di dalam card
+                              Wrap(
+                                spacing: 8.0,
+                                children: carts[index].sizes.map((size) {
+                                  return ElevatedButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        // Cek apakah ukuran sudah ada di dalam selectedSizes
+                                        if (carts[index]
+                                            .selectedSizes
+                                            .containsKey(size)) {
+                                          // Jika ada, tambah jumlahnya
+                                          carts[index].selectedSizes[size] =
+                                              carts[index]
+                                                      .selectedSizes[size]! +
+                                                  1;
+                                        } else {
+                                          // Jika tidak ada, tambahkan ukuran baru dengan jumlah 1
+                                          carts[index].selectedSizes[size] = 1;
+                                        }
+
+                                        // Tambahkan quantity total
+                                        carts[index].quantity++;
+
+                                        // Tandai ukuran aktif
+                                        carts[index].activeSize = size;
+
+                                        // Perbarui total harga
+                                        carts[index].updateTotalPrice();
+                                      });
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          carts[index].activeSize == size
+                                              ? Colors.yellow
+                                              : Colors.grey,
+                                      minimumSize: const Size(40, 30),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4.0, horizontal: 8.0),
+                                      textStyle: const TextStyle(fontSize: 12),
+                                    ),
+                                    child: Text(
+                                        size), // Misalnya S, M, L, XL, dll.
+                                  );
+                                }).toList(),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        // Wrap untuk tombol sizes agar tetap di dalam card
-                        Wrap(
-                          spacing: 8.0,
-                          runSpacing: 8.0,
-                          children: ['S', 'M', 'L', 'XL', 'XXL']
-                              .map((size) {
-                            return ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(40, 30),
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 4.0, horizontal: 8.0),
-                                textStyle: const TextStyle(fontSize: 12),
-                              ),
-                              child: Text(size),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-          ),
-          if (selectedProducts.isNotEmpty)
-            Card(
-              margin: const EdgeInsets.all(8.0),
-              color: Colors.yellow,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.receipt_long,
-                        color: Colors.orange, size: 24),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Rincian Pembayaran',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                ),
+                if (selectedProducts.isNotEmpty)
+                  Card(
+                    margin: const EdgeInsets.all(8.0),
+                    color: Colors.yellow,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.receipt_long,
+                              color: Colors.orange, size: 24),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Rincian Pembayaran',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const Divider(),
+                          Text('Nama Produk: $productNames'),
+                          Text('Jumlah Produk: $totalItems'),
+                          Text(
+                            'Total Harga Produk: Rp${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalPriceProductAll)}',
+                          ),
+                          const Text('Ongkos Kirim: Rp4.000'),
+                          const Text('Biaya Admin: Rp3.000'),
+                          const Text(
+                              'Alamat Pengiriman: 3MR6+CQP, Jl. Urip Sumoharjo, Pekalongan'),
+                        ],
                       ),
                     ),
-                    const Divider(),
-                    Text('Nama Produk: $productNames'),
-                    Text('Jumlah Produk: $totalItems'),
-                    Text(
-                      'Total Harga Produk: Rp${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalPriceProductAll)}',
-                    ),
-                    const Text('Ongkos Kirim: Rp4.000'),
-                    const Text('Biaya Admin: Rp3.000'),
-                    const Text(
-                        'Alamat Pengiriman: 3MR6+CQP, Jl. Urip Sumoharjo, Pekalongan'),
-                  ],
-                ),
-              ),
-            ),
-          Container(
-            color: Colors.grey[300],
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Total pembayaran:'),
-                    Text(
-                      'Rp ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalPayment)}',
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                ElevatedButton(
-                  onPressed: selectedProducts.isNotEmpty
-                      ? () {
-                          Navigator.pushNamed(context, '/pesanan');
-                        }
-                      : null,
-                  child: const Text('Buat Pesanan'),
+                  ),
+                Container(
+                  color: Colors.grey[300],
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Total pembayaran:'),
+                          Text(
+                            'Rp ${NumberFormat.currency(locale: 'id', symbol: '', decimalDigits: 0).format(totalPayment)}',
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      ElevatedButton(
+                        onPressed: selectedProducts.isNotEmpty
+                            ? () {
+                                // Menghitung tanggal pengiriman
+                                DateTime now = DateTime.now();
+                                DateTime shippingDate =
+                                    now.add(const Duration(days: 3));
+                                String dayName = DateFormat.EEEE('id')
+                                    .format(shippingDate); // Nama hari
+                                String formattedShippingDate =
+                                    DateFormat('d MMMM', 'id')
+                                        .format(shippingDate); // Format tanggal
+                                String shippingDateText =
+                                    '$dayName, $formattedShippingDate';
+
+                                final paymentDetails = {
+                                  'productNames': productNames,
+                                  'totalItems': totalItems,
+                                  'totalPriceProductAll': totalPriceProductAll,
+                                  'shippingAddress':
+                                      '3MR6+CQP, Jl. Urip Sumoharjo, Pringlangu, Kec. Pekalongan Bar., Kota Pekalongan, Jawa Tengah 51117',
+                                  'shippingDate': shippingDateText,
+                                  'productDetails': selectedProducts
+                                      .map((product) {
+                                        return product.selectedSizes.entries
+                                            .map((entry) {
+                                          return {
+                                            'productName': product.name,
+                                            'size': entry.key,
+                                            'quantity': entry.value,
+                                          };
+                                        }).toList();
+                                      })
+                                      .expand((x) => x)
+                                      .toList(),
+                                };
+
+                                // Menyimpan data pesanan
+                                Product.savedOrders.add(paymentDetails);
+
+                                // Menampilkan dialog konfirmasi
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Pesanan Berhasil'),
+                                    content: const Text(
+                                        'Pesanan Anda telah berhasil disimpan.'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Tutup'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(
+                                              context); // Tutup dialog
+                                          Navigator.pushNamed(
+                                              context, '/pesanan');
+                                        },
+                                        child: const Text('Lihat Pesanan'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                // Product.savedOrders.removeWhere((order) {
+                                //   final shippingDateText =
+                                //       order['shippingDate'];
+                                //   DateTime orderShippingDate =
+                                //       DateFormat('EEEE, d MMMM', 'id')
+                                //           .parse(shippingDateText);
+
+                                //   // Hapus jika tanggal pengiriman telah lewat
+                                //   return orderShippingDate
+                                //       .isBefore(DateTime.now());
+                                // });
+                              }
+                            : null,
+                        child: const Text('Buat Pesanan'),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -427,11 +618,11 @@ class _KeranjangPageState extends State<KeranjangPage> {
     return ListTile(
       selected: selectedRoute == route,
       selectedTileColor: Colors.blue.withOpacity(0.2),
-      leading: Icon(icon, color: selectedRoute == route ? Colors.yellow : null),
+      leading: Icon(icon, color: selectedRoute == route ? const Color.fromARGB(255, 40, 98, 206): null),
       title: Text(
         title,
         style: TextStyle(
-          color: selectedRoute == route ? Colors.yellow : null,
+          color: selectedRoute == route ? const Color.fromARGB(255, 40, 98, 206): null,
           fontWeight:
               selectedRoute == route ? FontWeight.bold : FontWeight.normal,
         ),
